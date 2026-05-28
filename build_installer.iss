@@ -6,8 +6,8 @@
 ; 应用程序名称和版本
 AppName=FH6Auto
 AppVersion={#AppVersion}
-AppPublisher=Sakura-wcs
-AppPublisherURL=https://github.com/Sakura-wcs/FH6Auto-nuitka
+AppPublisher=YOUSTHEONE
+AppPublisherURL=https://github.com/YOUSTHEONE/FH6Auto
 
 ; 默认安装目录 (通常在 Program Files 下)
 DefaultDirName={autopf}\FH6Auto
