@@ -34,15 +34,15 @@ jobs:
 
     - name: 提取 main.py 中的版本号
       shell: python
-      env:
-        PYTHONIOENCODING: utf-8  # 强制 Python 使用 UTF-8 处理输出
       run: |
         import re, os
         with open('main.py', 'r', encoding='utf-8') as f:
             match = re.search(r'CURRENT_VERSION\s*=\s*"([^"]+)"', f.read())
         
         version = match.group(1) if match else "1.0.0"
-        print(f"提取到的版本号: {version}")
+        
+        # 【关键修改】：这里换成了纯英文输出，彻底避开控制台中文编码炸雷的问题
+        print(f"Extracted version: {version}")
         
         with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
             env_file.write(f"APP_VERSION={version}\n")
