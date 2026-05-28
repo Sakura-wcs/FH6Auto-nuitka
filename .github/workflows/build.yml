@@ -34,6 +34,8 @@ jobs:
 
     - name: 提取 main.py 中的版本号
       shell: python
+      env:
+        PYTHONIOENCODING: utf-8  # 强制 Python 使用 UTF-8 处理输出
       run: |
         import re, os
         with open('main.py', 'r', encoding='utf-8') as f:
