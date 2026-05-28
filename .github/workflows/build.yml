@@ -1,0 +1,60 @@
+name: Build and Release FH6Auto
+
+on:
+  push:
+    tags:
+      - 'v*'  # 只有推送 v 开头的 tag (如 v1.1.5.2) 时才会触发
+  workflow_dispatch:      # 允许你在网页端手动点击运行
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Python 环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' 
+        cache: 'pip'
+
+    - name: 统一控制台编码及安装依赖
+      run: |
+        chcp 65001
+        python -m pip install --upgrade pip
+        if (Test-Path -Path "requirements.txt") { pip install -r requirements.txt }
+        pip install nuitka
+
+    - name: Nuitka 编译 (目录模式 + 管理员权限)
+      run: |
+        chcp 65001
+        python -m nuitka --standalone --windows-uac-admin --assume-yes-for-downloads --output-dir=build_out main.py
+
+    - name: 提取 main.py 中的版本号
+      shell: python
+      run: |
+        import re, os
+        with open('main.py', 'r', encoding='utf-8') as f:
+            match = re.search(r'CURRENT_VERSION\s*=\s*"([^"]+)"', f.read())
+        
+        version = match.group(1) if match else "1.0.0"
+        print(f"提取到的版本号: {version}")
+        
+        with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+            env_file.write(f"APP_VERSION={version}\n")
+
+    - name: Inno Setup 制作安装包
+      run: |
+        chcp 65001
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${env:APP_VERSION}" build_installer.iss
+
+    - name: 发布到 GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: Release/FH6Auto_Installer_v*.exe
+        name: Release v${{ env.APP_VERSION }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
