@@ -5,7 +5,6 @@
 [Setup]
 ; 应用程序名称和版本
 AppName=FH6Auto
-; 自动跟进传入的版本号
 AppVersion={#AppVersion}
 AppPublisher=Sakura-wcs
 AppPublisherURL=https://github.com/Sakura-wcs/FH6Auto-nuitka
@@ -14,7 +13,7 @@ AppPublisherURL=https://github.com/Sakura-wcs/FH6Auto-nuitka
 DefaultDirName={autopf}\FH6Auto
 DefaultGroupName=FH6Auto
 
-; 输出安装包的路径和文件名，文件名也会自动带上版本号
+; 输出安装包的路径和文件名
 OutputDir=.\Release
 OutputBaseFilename=FH6Auto_Installer_v{#AppVersion}
 
@@ -30,16 +29,20 @@ PrivilegesRequired=admin
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; 将 Nuitka 编译出的 main.dist 文件夹内的所有内容打包
-; 注意这里的 Source 路径，必须指向你实际生成的目录
+; 1. 将 Nuitka 编译出的 main.dist 文件夹内的所有内容打包
 Source: "build_out\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; 2. 将项目根目录下的 assets 文件夹打包到安装目录的 assets 文件夹中
+Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; 3. 将项目根目录下的 images 文件夹打包到安装目录的 images 文件夹中
+Source: "images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; 在开始菜单和桌面创建快捷方式
-; 这里的 main.exe 是 Nuitka 根据主入口 main.py 默认生成的执行文件名
 Name: "{group}\FH6Auto"; Filename: "{app}\main.exe"
 Name: "{autodesktop}\FH6Auto"; Filename: "{app}\main.exe"; Tasks: desktopicon
 
 [Run]
-; 安装完成后提供运行选项 (可选)
+; 安装完成后提供运行选项
 Filename: "{app}\main.exe"; Description: "{cm:LaunchProgram,FH6Auto}"; Flags: nowait postinstall skipifsilent
