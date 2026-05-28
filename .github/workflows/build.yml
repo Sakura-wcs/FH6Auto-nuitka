@@ -52,9 +52,12 @@ jobs:
 
     - name: 发布到 GitHub Release
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
+      # 修改这里：只要是推 Tag，或者是手动触发(workflow_dispatch)，都允许执行
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       with:
         files: Release/FH6Auto_Installer_v*.exe
+        # 如果是手动触发，由于没有 tag 名，我们用环境变量里的版本号作为 Tag 名字
+        tag_name: v${{ env.APP_VERSION }}
         name: Release v${{ env.APP_VERSION }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
