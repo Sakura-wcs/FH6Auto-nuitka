@@ -52,14 +52,20 @@ jobs:
             env_file.write(f"APP_VERSION={version}\n")
 
     - name: Inno Setup Build
+      shell: cmd
       run: |
         chcp 65001
-        # 【极其重要】：必须在带引号的执行路径前加上 &，并使用 PowerShell 规范的 $env: 变量语法
-        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$env:APP_VERSION" build_installer.iss
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=%APP_VERSION%" build_installer.iss
 
-    - name: Publish to GitHub Release
+    - name: 【核心修改】把安装包保存为云端产物 (供手动下载)
+      uses: actions/upload-artifact@v4
+      with:
+        name: FH6Auto_Installer_v${{ env.APP_VERSION }}
+        path: Release/FH6Auto_Installer_v*.exe
+        compression-level: 0 # 不二次压缩，加快速度
+
+    - name: Publish to GitHub Release (仅限Tag触发时执行)
       uses: softprops/action-gh-release@v2
-      # 只有通过 Tag 触发时，才会创建 Release 并挂载 exe
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: Release/FH6Auto_Installer_v*.exe
