@@ -1,0 +1,74 @@
+name: Build and Release FH6Auto
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送以 v 开头的 tag (如 v1.1.5.4) 时触发
+  workflow_dispatch:      # 允许在 GitHub 网页端手动触发
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' 
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        chcp 65001
+        python -m pip install --upgrade pip
+        if (Test-Path -Path "requirements.txt") { pip install -r requirements.txt }
+        pip install nuitka
+
+    - name: Nuitka Build (Standalone + UAC Admin)
+      run: |
+        chcp 65001
+        python -m nuitka --standalone --windows-uac-admin --assume-yes-for-downloads --output-dir=build_out main.py
+
+    - name: Extract Version
+      shell: python
+      env:
+        PYTHONIOENCODING: utf-8  # 强制使用 UTF-8 输出，防止系统退火到 cp1252
+      run: |
+        import re, os
+        # 读取 main.py 中的 CURRENT_VERSION
+        with open('main.py', 'r', encoding='utf-8') as f:
+            match = re.search(r'CURRENT_VERSION\s*=\s*"([^"]+)"', f.read())
+        
+        version = match.group(1) if match else "1.0.0"
+        
+        # 【极其重要】：只能使用纯英文输出，彻底避开 Windows 服务器的中文编码炸雷
+        print(f"Extracted version: {version}")
+        
+        # 将版本号写入 GitHub 环境变量
+        with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+            env_file.write(f"APP_VERSION={version}\n")
+
+    - name: Inno Setup Build
+      shell: cmd
+      run: |
+        chcp 65001
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=%APP_VERSION%" build_installer.iss
+
+    - name: 【核心修改】把安装包保存为云端产物 (供手动下载)
+      uses: actions/upload-artifact@v4
+      with:
+        name: FH6Auto_Installer_v${{ env.APP_VERSION }}
+        path: Release/FH6Auto_Installer_v*.exe
+        compression-level: 0 # 不二次压缩，加快速度
+
+    - name: Publish to GitHub Release (仅限Tag触发时执行)
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: Release/FH6Auto_Installer_v*.exe
+        name: Release v${{ env.APP_VERSION }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
